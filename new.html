@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Pattern Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f0;
+    --muted: #888;
+    --blue: #3b82f6;
+    --blue-light: #60a5fa;
+    --red: #ef4444;
+    --green: #22c55e;
+    --yellow: #facc15;
+    --accent: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--blue-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+
+  /* Controls Bar */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ctrl-group label {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .ctrl-group input[type=number] {
+    width: 64px;
+    padding: 5px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .ctrl-group input[type=number]:focus {
+    border-color: var(--blue);
+  }
+
+  .divider { width: 1px; height: 28px; background: var(--border); }
+
+  .pat-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pat-btn.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--blue);
+    color: var(--blue-light);
+  }
+
+  .pat-btn:hover:not(.active) {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  #start-btn {
+    padding: 7px 22px;
+    background: linear-gradient(135deg, var(--blue), var(--accent));
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-left: auto;
+  }
+
+  #start-btn:hover { opacity: 0.88; transform: scale(0.98); }
+
+  /* Stats Row */
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 16px;
+    text-align: center;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .stat-card .lbl {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 3px;
+  }
+
+  .stat-card .val {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  #s-time.danger { color: var(--red); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .leg-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+
+  /* Grid */
+  .grid-wrap {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0a0a0c;
+    max-width: 860px;
+    width: 100%;
+  }
+
+  #grid {
+    display: grid;
+    gap: 2px;
+    padding: 8px;
+    background: #0a0a0c;
+  }
+
+  .cell {
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.07s, filter 0.07s;
+    position: relative;
+  }
+
+  .cell:hover { transform: scale(0.82); filter: brightness(1.3); }
+
+  .green  { background: #16a34a; }
+  .blue   { background: var(--blue); box-shadow: 0 0 6px rgba(59,130,246,0.5); }
+  .red    { background: var(--red); }
+  .blink-w { background: #fff; }
+  .blink-r { background: var(--red); }
+
+  .player {
+    background: var(--yellow) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 0 10px rgba(250,204,21,0.7) !important;
+    z-index: 2;
+  }
+
+  /* Overlay */
+  #overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    backdrop-filter: blur(3px);
+  }
+
+  #overlay.show { display: flex; }
+
+  .msg-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    max-width: 340px;
+  }
+
+  .msg-box h2 {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .msg-box p {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .msg-box .score-big {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--blue-light);
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .msg-box button {
+    padding: 10px 28px;
+    background: linear-gradient(135deg, var(--blue), var(--accent));
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .msg-box button:hover { opacity: 0.85; }
+
+  .hint {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Grid Pattern Game</h1>
+<p class="subtitle">Collect ● Avoid ● Survive</p>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <label>ROWS</label>
+    <input type="number" id="inp-rows" value="12" min="10" max="30">
+  </div>
+  <div class="ctrl-group">
+    <label>COLS</label>
+    <input type="number" id="inp-cols" value="15" min="10" max="35">
+  </div>
+  <div class="divider"></div>
+  <button class="pat-btn active" id="btn-p1" onclick="selectPattern(1)">Pattern 1</button>
+  <button class="pat-btn" id="btn-p2" onclick="selectPattern(2)">Pattern 2</button>
+  <div class="divider"></div>
+  <button id="start-btn" onclick="startGame()">▶ Start Game</button>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="lbl">Pattern</div><div class="val" id="s-pat">1</div></div>
+  <div class="stat-card"><div class="lbl">Lives</div><div class="val" id="s-lives">❤❤❤❤❤</div></div>
+  <div class="stat-card"><div class="lbl">Timer</div><div class="val" id="s-time">30s</div></div>
+  <div class="stat-card"><div class="lbl">Blue Left</div><div class="val" id="s-blue">—</div></div>
+  <div class="stat-card"><div class="lbl">Score</div><div class="val" id="s-score">0</div></div>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#facc15;border-radius:50%"></div>You</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Blue — collect (+1 pt)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Red — danger (-1 life)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#16a34a"></div>Green — safe zone</div>
+</div>
+
+<div class="grid-wrap">
+  <div id="grid"></div>
+  <div id="overlay">
+    <div class="msg-box">
+      <h2 id="msg-title" style="color:#f0f0f0">Grid Game</h2>
+      <p id="msg-sub">Configure grid size, pick a pattern,<br>then press Start Game.</p>
+      <span class="score-big" id="msg-score" style="display:none"></span>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+  </div>
+</div>
+
+<p class="hint">Click adjacent tiles to move &nbsp;|&nbsp; Arrow keys or WASD also work</p>
+
+<script>
+let rows=12, cols=15, pattern=1;
+let lives=5, score=0, timeLeft=30;
+let board=[], playerR=0, playerC=0;
+let timerID=null, blinkTimers={}, running=false, blueLeft=0;
+
+function selectPattern(p){
+  pattern=p;
+  document.getElementById('btn-p1').classList.toggle('active', p===1);
+  document.getElementById('btn-p2').classList.toggle('active', p===2);
+  document.getElementById('s-pat').textContent=p;
+  if(!running) buildBoard();
+}
+
+function getRows(){ return Math.max(10, Math.min(30, parseInt(document.getElementById('inp-rows').value)||12)); }
+function getCols(){ return Math.max(10, Math.min(35, parseInt(document.getElementById('inp-cols').value)||15)); }
+
+function getTileType(r, c){
+  if(pattern===1){
+    let nr=r/rows, nc=c/cols;
+    let val=(Math.sin(nr*Math.PI*3)+Math.cos(nc*Math.PI*3));
+    if(val>1.2) return 'blue';
+    if(val<-1.2) return 'red';
+    return 'green';
+  } else {
+    let chess=(r+c)%3;
+    if(chess===0) return 'green';
+    if(chess===1) return 'blue';
+    return 'red';
+  }
+}
+
+function buildBoard(){
+  rows=getRows(); cols=getCols();
+  board=[]; blueLeft=0;
+  for(let r=0;r<rows;r++){
+    board.push([]);
+    for(let c=0;c<cols;c++){
+      let t=getTileType(r,c);
+      board[r].push({type:t, orig:t});
+      if(t==='blue') blueLeft++;
+    }
+  }
+  playerR=Math.floor(rows/2);
+  playerC=Math.floor(cols/2);
+  // ensure spawn on green
+  board[playerR][playerC].orig='green';
+  board[playerR][playerC].type='player';
+  renderGrid();
+}
+
+function renderGrid(){
+  const g=document.getElementById('grid');
+  const wrapW = Math.min(860, window.innerWidth-40) - 20;
+  const cellSz = Math.max(18, Math.min(44, Math.floor(Math.min(wrapW/cols, 520/rows))));
+  g.style.gridTemplateColumns=`repeat(${cols}, ${cellSz}px)`;
+  g.innerHTML='';
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const d=document.createElement('div');
+      d.className='cell';
+      d.id=`c${r}_${c}`;
+      d.style.width=d.style.height=cellSz+'px';
+      applyClass(d, board[r][c].type, r===playerR&&c===playerC);
+      d.onclick=(()=>{const rr=r,cc=c;return()=>movePlayer(rr,cc);})();
+      g.appendChild(d);
+    }
+  }
+  updateStats();
+}
+
+function applyClass(el, type, isPlayer){
+  el.className='cell';
+  if(isPlayer){ el.classList.add('player'); return; }
+  el.classList.add(type==='player'?'green':type);
+}
+
+function cellEl(r,c){ return document.getElementById(`c${r}_${c}`); }
+
+function movePlayer(r, c){
+  if(!running) return;
+  const dr=Math.abs(r-playerR), dc=Math.abs(c-playerC);
+  if(dr+dc!==1) return;
+  // restore old cell
+  const oldEl=cellEl(playerR, playerC);
+  board[playerR][playerC].type=board[playerR][playerC].orig;
+  applyClass(oldEl, board[playerR][playerC].type, false);
+  const dest=board[r][c];
+  if(dest.type==='red'){
+    triggerBlink(r,c);
+    lives--;
+    updateStats();
+    if(lives<=0){ endGame(false); return; }
+  }
+  if(dest.type==='blue'){ score++; blueLeft--; }
+  board[r][c].type='player';
+  playerR=r; playerC=c;
+  applyClass(cellEl(r,c), dest.type, true);
+  updateStats();
+  if(blueLeft<=0){
+    if(pattern===1){
+      running=false; clearInterval(timerID);
+      showTransition();
+    } else {
+      endGame(true);
+    }
+  }
+}
+
+function triggerBlink(r,c){
+  const key=`${r}_${c}`;
+  if(blinkTimers[key]) clearInterval(blinkTimers[key]);
+  let tog=0, count=0;
+  board[r][c].orig='red';
+  blinkTimers[key]=setInterval(()=>{
+    const el=cellEl(r,c);
+    if(!el){ clearInterval(blinkTimers[key]); return; }
+    if(board[r][c].type!=='player'){
+      el.className='cell';
+      el.classList.add(tog%2===0?'blink-w':'blink-r');
+    }
+    tog++; count++;
+    if(count>8){
+      clearInterval(blinkTimers[key]);
+      if(board[r][c].type!=='player'){ el.className='cell red'; }
+    }
+  }, 110);
+}
+
+function showTransition(){
+  const ov=document.getElementById('overlay');
+  const title=document.getElementById('msg-title');
+  const sub=document.getElementById('msg-sub');
+  const sc=document.getElementById('msg-score');
+  const btn=document.querySelector('.msg-box button');
+  title.style.color='#a78bfa';
+  title.textContent='Pattern 1 cleared!';
+  sub.textContent='Great job! Moving to Pattern 2...';
+  sc.style.display='none';
+  btn.style.display='none';
+  ov.classList.add('show');
+  setTimeout(()=>{
+    ov.classList.remove('show');
+    btn.style.display='';
+    selectPattern(2);
+    startGame();
+  }, 1400);
+}
+
+function updateStats(){
+  const hearts='❤'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,5-lives));
+  document.getElementById('s-lives').textContent=hearts;
+  const te=document.getElementById('s-time');
+  te.textContent=timeLeft+'s';
+  te.classList.toggle('danger', timeLeft<=10);
+  document.getElementById('s-blue').textContent=blueLeft;
+  document.getElementById('s-score').textContent=score;
+}
+
+function startGame(){
+  Object.values(blinkTimers).forEach(clearInterval);
+  blinkTimers={}; clearInterval(timerID);
+  lives=5; score=0; timeLeft=30; running=true;
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelector('.msg-box button').style.display='';
+  buildBoard();
+  timerID=setInterval(()=>{
+    timeLeft--;
+    updateStats();
+    if(timeLeft<=0) endGame(false);
+  },1000);
+}
+
+function endGame(win){
+  running=false; clearInterval(timerID);
+  const ov=document.getElementById('overlay');
+  const title=document.getElementById('msg-title');
+  const sub=document.getElementById('msg-sub');
+  const sc=document.getElementById('msg-score');
+  sc.style.display='block';
+  sc.textContent=score+' pts';
+  if(win){
+    title.style.color='#22c55e';
+    title.textContent='You Win!';
+    sub.textContent='All blue tiles collected!';
+  } else {
+    title.style.color='#ef4444';
+    title.textContent='Game Over';
+    sub.textContent=lives<=0?'You ran out of lives.':'The timer ran out!';
+  }
+  ov.classList.add('show');
+}
+
+document.addEventListener('keydown', e=>{
+  if(!running) return;
+  let nr=playerR, nc=playerC;
+  if(e.key==='ArrowUp'||e.key==='w') nr--;
+  else if(e.key==='ArrowDown'||e.key==='s') nr++;
+  else if(e.key==='ArrowLeft'||e.key==='a') nc--;
+  else if(e.key==='ArrowRight'||e.key==='d') nc++;
+  else return;
+  e.preventDefault();
+  if(nr>=0&&nr<rows&&nc>=0&&nc<cols) movePlayer(nr,nc);
+});
+
+// Init
+buildBoard();
+document.getElementById('overlay').classList.add('show');
+</script>
+</body>
+</html>
